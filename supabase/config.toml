@@ -1,0 +1,16 @@
+project_id = "cvduzegmhfyvscjygjrm"
+
+[functions.chat]
+verify_jwt = true
+
+[functions.excel-export]
+verify_jwt = true
+
+[functions.monthly-report]
+verify_jwt = true
+
+[functions.activity-report]
+verify_jwt = true
+
+[functions.court-submission]
+verify_jwt = true
