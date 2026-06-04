@@ -1,0 +1,38 @@
+# cron.yaml — deploy with:
+#   gcloud scheduler jobs create http sophia-embed-corpus \
+#     --schedule="0 21 * * *" \
+#     --uri="${CLOUD_RUN_URL}/embed" \
+#     --http-method=POST \
+#     --headers="x-api-key=${CLOUD_RUN_API_KEY},Content-Type=application/json" \
+#     --message-body="{}" \
+#     --time-zone="UTC" \
+#     --location="us-central1" \
+#     --attempt-deadline="30m"
+#
+# Schedule: 0 21 * * * UTC = midnight Uganda time (UTC+3)
+# Runs nightly, picks up any docs uploaded during the day.
+#
+# To deploy manually via the console:
+#   Frequency:      0 21 * * *
+#   Timezone:       UTC
+#   Target:         HTTP
+#   URL:            ${CLOUD_RUN_URL}/embed
+#   Method:         POST
+#   Headers:        x-api-key: <your key>
+#   Attempt deadline: 30 minutes
+
+name: sophia-embed-corpus
+schedule: "0 21 * * *"
+timeZone: UTC
+httpTarget:
+  uri: "${CLOUD_RUN_URL}/embed"
+  httpMethod: POST
+  headers:
+    x-api-key: "${CLOUD_RUN_API_KEY}"
+    Content-Type: application/json
+  body: e30=   # base64 of "{}"
+attemptDeadline: 1800s   # 30 minutes
+retryConfig:
+  retryCount: 2
+  minBackoffDuration: 5s
+  maxBackoffDuration: 60s
