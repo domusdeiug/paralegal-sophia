@@ -92,3 +92,5 @@ For simple general questions, answer directly without delegating.""",
         write_result,
     ],
 )
+
+root_agent = orchestrator_agent
