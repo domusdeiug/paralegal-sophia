@@ -1,6 +1,6 @@
 import re
 from google.adk.tools import ToolContext
-from lib.supabase_client import get_supabase
+from ..lib.supabase_client import get_supabase
 
 
 def read_cases_db(query: str, tool_context: ToolContext) -> str:

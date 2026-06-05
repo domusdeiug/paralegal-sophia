@@ -2,11 +2,12 @@ import os
 from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
 
-from tools.laws_africa import search_laws_africa
-from tools.corpus_search import search_legal_corpus
-from tools.case_db import read_cases_db
-from tools.web_search import web_search
-from tools.docx_gen import generate_docx
+from .tools.laws_africa import search_laws_africa
+from .tools.corpus_search import search_legal_corpus
+from .tools.case_db import read_cases_db
+from .tools.web_search import web_search
+from .tools.docx_gen import generate_docx
+from .tools.supabase_writer import write_result
 
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
 
@@ -74,17 +75,20 @@ For conversational legal questions:
 - Delegate to CaseAgent for specific client cases or current news
 - Use at most 2 sub-agent calls per response
 - Synthesize results into a clear direct answer
+- Finally, use the write_result tool to save the results to the database.
 
 For document drafting requests:
 - Delegate to ResearchAgent to gather legal authorities
 - Delegate to CaseAgent if a specific client is mentioned
 - Pass gathered context to DraftingAgent to produce the Word document
 - Return the download URL with a short summary
+- Finally, use the write_result tool to save the results to the database.
 
 For simple general questions, answer directly without delegating.""",
     tools=[
         AgentTool(agent=research_agent),
         AgentTool(agent=case_agent),
         AgentTool(agent=drafting_agent),
+        write_result,
     ],
 )

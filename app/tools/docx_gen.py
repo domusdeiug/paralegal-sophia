@@ -7,7 +7,7 @@ from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-from lib.supabase_client import get_supabase
+from ..lib.supabase_client import get_supabase
 
 
 # ---------------------------------------------------------------------------

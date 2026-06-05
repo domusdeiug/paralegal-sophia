@@ -1,0 +1,6 @@
+agent: app.agent:orchestrator_agent
+description: A legal assistant agent.
+display_name: Paralegal Sophia
+acli_version: 0.3.0
+create_params:
+  deployment_target: agent_runtime

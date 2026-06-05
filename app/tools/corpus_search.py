@@ -1,6 +1,6 @@
 from google.adk.tools import ToolContext
-from lib.supabase_client import get_supabase
-from lib.embeddings import embed_text
+from ..lib.supabase_client import get_supabase
+from ..lib.embeddings import embed_text
 
 
 def search_legal_corpus(query: str, tool_context: ToolContext) -> str:
