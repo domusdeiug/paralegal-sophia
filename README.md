@@ -22,7 +22,7 @@ Sophia is a multi-agent system that understands the Ugandan legal context. You c
 Frontend (React + TanStack Router)
         │
         ▼
-Supabase Edge Functions  ──────►  Trigger.dev (async task queue)
+Supabase Edge Functions
         │
         ▼
 Vertex AI Agent Engine  (Python, Google ADK)
