@@ -12,7 +12,9 @@ flowchart LR
     Orchestrator --> DraftingAgent["Drafting Agent"]
 
     ResearchAgent --> LawsAfrica["Laws Africa API"]
+    LawsAfrica["Laws Africa API"] --> ResearchAgent
     ResearchAgent --> Corpus["Legal Corpus (Supabase pgvector)"]
+    Corpus["Legal Corpus (Supabase pgvector)"] --> ResearchAgent
 
     CaseAgent --> CaseDB["Case Database (Supabase)"]
     CaseAgent --> Tavily["Tavily Web Search"]
