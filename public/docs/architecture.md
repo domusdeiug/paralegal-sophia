@@ -19,12 +19,6 @@ flowchart LR
 
     DraftingAgent --> DocX["Word Document (.docx)"]
 
-    Orchestrator --> Gemini["Gemini 2.5 Flash"]
-
-    ResearchAgent --> Gemini
-    CaseAgent --> Gemini
-    DraftingAgent --> Gemini
-
     ResearchAgent --> Orchestrator
     CaseAgent --> Orchestrator
     DraftingAgent --> Orchestrator
