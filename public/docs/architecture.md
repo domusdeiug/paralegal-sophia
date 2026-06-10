@@ -17,9 +17,12 @@ flowchart LR
     Corpus["Legal Corpus (Supabase pgvector)"] --> ResearchAgent
 
     CaseAgent --> CaseDB["Case Database (Supabase)"]
+    CaseDB["Case Database (Supabase)"] --> CaseAgent
     CaseAgent --> Tavily["Tavily Web Search"]
+    Tavily["Tavily Web Search"] --> CaseAgent
 
     DraftingAgent --> DocX["Word Document (.docx)"]
+    DocX["Word Document (.docx)"] --> Supabase
 
     ResearchAgent --> Orchestrator
     CaseAgent --> Orchestrator
