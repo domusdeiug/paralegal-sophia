@@ -1,6 +1,7 @@
+```mermaid
 flowchart LR
-    User --> Frontend
-    Frontend --> Supabase
+    User[User] --> Frontend[Frontend]
+    Frontend --> Supabase[Supabase]
 
     Supabase --> VertexAI["Vertex AI Agent Runtime"]
 
@@ -18,7 +19,8 @@ flowchart LR
 
     DraftingAgent --> DocX["Word Document (.docx)"]
 
-    Orchestrator --> Gemini["Gemini Flash"]
+    Orchestrator --> Gemini["Gemini 2.5 Flash"]
+
     ResearchAgent --> Gemini
     CaseAgent --> Gemini
     DraftingAgent --> Gemini
@@ -26,7 +28,9 @@ flowchart LR
     ResearchAgent --> Orchestrator
     CaseAgent --> Orchestrator
     DraftingAgent --> Orchestrator
+
     Orchestrator --> VertexAI
     VertexAI --> Supabase
     Supabase --> Frontend
     Frontend --> User
+```
