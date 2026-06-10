@@ -1,6 +1,8 @@
 import os
 from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
+from google.adk.models import Gemini
+from google.genai import types
 
 from .tools.laws_africa import search_laws_africa
 from .tools.corpus_search import search_legal_corpus
@@ -9,7 +11,11 @@ from .tools.web_search import web_search
 from .tools.docx_gen import generate_docx
 from .tools.supabase_writer import write_result
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+os.environ["GOOGLE_CLOUD_PROJECT"] = "paralegal-497015"
+os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
+os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+
+GEMINI_MODEL=Gemini(model="gemini-flash-latest", retry_options=types.HttpRetryOptions(attempts=3))
 
 # ---------------------------------------------------------------------------
 # Sub-agents
