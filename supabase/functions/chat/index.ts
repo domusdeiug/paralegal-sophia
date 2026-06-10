@@ -1,26 +1,42 @@
 // supabase/functions/chat-vertex/index.ts
-import { corsHeaders } from "../_shared/cors.ts";
-import { requireUser } from "../_shared/auth.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-// ---------------------------------------------------------------------------
-// Config — set these in Supabase secrets:
-//   VERTEX_PROJECT        e.g. ""
-//   VERTEX_LOCATION       e.g. ""
-//   VERTEX_ENGINE_ID      e.g. ""
-//   VERTEX_SA_KEY         full service account JSON (stringified)
-// ---------------------------------------------------------------------------
-
-const PROJECT    = Deno.env.get("VERTEX_PROJECT")!;
-const LOCATION   = Deno.env.get("VERTEX_LOCATION")!;
-const ENGINE_ID  = Deno.env.get("VERTEX_ENGINE_ID")!;
+const PROJECT   = Deno.env.get("VERTEX_PROJECT")!;
+const LOCATION  = Deno.env.get("VERTEX_LOCATION")!;
+const ENGINE_ID = Deno.env.get("VERTEX_ENGINE_ID")!;
 const SA_KEY_RAW = Deno.env.get("VERTEX_SA_KEY")!;
 
 const BASE_URL = `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT}/locations/${LOCATION}/reasoningEngines/${ENGINE_ID}`;
 
-// ---------------------------------------------------------------------------
-// Google service account JWT + access token
-// ---------------------------------------------------------------------------
+async function requireUser(req: Request) {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    {
+      global: {
+        headers: { Authorization: req.headers.get("Authorization") ?? "" },
+      },
+    }
+  );
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  return { user, supabase };
+}
 
 async function getAccessToken(): Promise<string> {
   const sa = JSON.parse(SA_KEY_RAW);
@@ -43,7 +59,6 @@ async function getAccessToken(): Promise<string> {
 
   const signingInput = `${encode(header)}.${encode(payload)}`;
 
-  // Import the private key
   const pemBody = sa.private_key
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
@@ -70,7 +85,6 @@ async function getAccessToken(): Promise<string> {
 
   const jwt = `${signingInput}.${signature}`;
 
-  // Exchange JWT for access token
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -85,16 +99,11 @@ async function getAccessToken(): Promise<string> {
   return access_token;
 }
 
-// ---------------------------------------------------------------------------
-// Vertex session management
-// ---------------------------------------------------------------------------
-
 async function getOrCreateSession(
   supabase: ReturnType<typeof createClient>,
   userId: string,
   token: string
 ): Promise<string> {
-  // Check for existing session
   const { data } = await supabase
     .from("vertex_sessions")
     .select("session_id")
@@ -103,7 +112,6 @@ async function getOrCreateSession(
 
   if (data?.session_id) return data.session_id;
 
-  // Create a new one
   const res = await fetch(`${BASE_URL}:query`, {
     method: "POST",
     headers: {
@@ -123,7 +131,6 @@ async function getOrCreateSession(
   const json = await res.json();
   const sessionId = json.output?.id as string;
 
-  // Persist it
   await supabase.from("vertex_sessions").upsert({
     user_id: userId,
     session_id: sessionId,
@@ -132,10 +139,6 @@ async function getOrCreateSession(
 
   return sessionId;
 }
-
-// ---------------------------------------------------------------------------
-// Query the agent
-// ---------------------------------------------------------------------------
 
 async function queryAgent(
   token: string,
@@ -156,7 +159,6 @@ async function queryAgent(
         user_id: userId,
         session_id: sessionId,
         message: message,
-        // Pass run_id and user_id into agent state so write_result tool can use them
         state: { run_id: runId, user_id: userId },
       },
     }),
@@ -167,8 +169,6 @@ async function queryAgent(
   }
 
   const json = await res.json();
-
-  // Extract the final text reply and any tool calls from the event list
   const events: unknown[] = Array.isArray(json.output) ? json.output : [];
 
   let reply = "";
@@ -189,7 +189,6 @@ async function queryAgent(
     for (const part of parts) {
       const p = part as Record<string, unknown>;
 
-      // Capture tool calls
       if (p.function_call) {
         const fc = p.function_call as Record<string, unknown>;
         const name = fc.name as string;
@@ -198,10 +197,8 @@ async function queryAgent(
         }
       }
 
-      // Capture final text — last author with text and no function_call wins
       if (p.text && !p.thought_signature) {
         const author = e.author as string | undefined;
-        // Only take text from the orchestrator, not sub-agents mid-chain
         if (author === "OrchestratorAgent") {
           reply = p.text as string;
         }
@@ -210,7 +207,6 @@ async function queryAgent(
   }
 
   if (!reply) {
-    // Fallback: grab the last text part from any event
     for (const event of [...events].reverse()) {
       const e = event as Record<string, unknown>;
       const content = e.content as Record<string, unknown> | undefined;
@@ -228,10 +224,6 @@ async function queryAgent(
 
   return { reply: reply || "(no reply)", toolsUsed };
 }
-
-// ---------------------------------------------------------------------------
-// Main handler
-// ---------------------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -258,8 +250,6 @@ Deno.serve(async (req) => {
       return enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     }
 
-    // Use service-role client for DB writes (task_results, vertex_sessions)
-    // so we're not blocked by RLS when writing on behalf of the user
     const serviceClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -271,7 +261,6 @@ Deno.serve(async (req) => {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // 1. Insert pending row immediately so frontend poll doesn't 404
           await serviceClient.from("task_results").insert({
             run_id: runId,
             user_id: user.id,
@@ -280,14 +269,11 @@ Deno.serve(async (req) => {
             output: {},
           });
 
-          // 2. Tell frontend we've started — it begins polling now
           controller.enqueue(sseEvent("started", { runId }));
 
-          // 3. Auth + session
           const token = await getAccessToken();
           const sessionId = await getOrCreateSession(supabase, user.id, token);
 
-          // 4. Call the agent — this waits for the full response
           const { reply, toolsUsed } = await queryAgent(
             token,
             sessionId,
@@ -296,13 +282,7 @@ Deno.serve(async (req) => {
             runId
           );
 
-          // 5. Write completed result — shape matches what ChatTab expects
-          //    chat mode:  { reply, toolsUsed }
-          //    agent mode: { summary, downloadUrl } — agent writes this itself
-          //                via the write_result tool, so we only write for chat
           if (mode === "agent") {
-            // For agent mode the write_result tool inside Vertex handles the DB write.
-            // We just need to make sure it wrote something; if not, write a fallback.
             const { data: existing } = await serviceClient
               .from("task_results")
               .select("status")
@@ -316,7 +296,6 @@ Deno.serve(async (req) => {
               }).eq("run_id", runId);
             }
           } else {
-            // chat mode — we write the result directly
             await serviceClient.from("task_results").update({
               status: "completed",
               output: { reply, toolsUsed },
@@ -324,7 +303,6 @@ Deno.serve(async (req) => {
           }
 
         } catch (err) {
-          // Mark as failed in DB so frontend stops polling
           await serviceClient.from("task_results").update({
             status: "failed",
             output: { error: String(err) },
