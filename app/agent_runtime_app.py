@@ -40,9 +40,9 @@ class AgentEngineApp(AdkApp):
     def register_operations(self) -> dict[str, list[str]]:
         """Registers the operations of the Agent."""
         operations = super().register_operations()
-        operations[""] = [*operations.get("", []), "register_feedback"]
+        # Expose stream_query and register_feedback as callable methods
+        operations[""] = [*operations.get("", []), "stream_query", "register_feedback"]
         return operations
-
 
 logs_bucket_name = os.environ.get("LOGS_BUCKET_NAME")
 
