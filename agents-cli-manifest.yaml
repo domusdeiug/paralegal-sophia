@@ -1,6 +1,13 @@
-agent: app.agent:orchestrator_agent
-description: A legal assistant agent.
+agent: app.agent:root_agent
+description: A Ugandan paralegal AI assistant for legal research and document drafting.
 display_name: Paralegal Sophia
-acli_version: 0.3.0
+acli_version: 0.3.1
 create_params:
   deployment_target: agent_runtime
+  runtime_config:
+    app: app.agent_runtime_app:agent_runtime
+  env_vars:
+    GOOGLE_CLOUD_PROJECT: paralegal-497015
+    GOOGLE_CLOUD_REGION: us-central1
+    GEMINI_MODEL: gemini-2.5-flash-lite
+    AGENT_VERSION: 0.1.0
