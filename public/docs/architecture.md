@@ -26,7 +26,6 @@ flowchart LR
 
     ResearchAgent --> Orchestrator
     CaseAgent --> Orchestrator
-    DraftingAgent --> Orchestrator
 
     Orchestrator --> VertexAI
     VertexAI --> Supabase
